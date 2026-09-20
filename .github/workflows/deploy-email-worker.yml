@@ -1,0 +1,29 @@
+name: deploy-email-worker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "email-worker/**"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-email-worker
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Deploy email worker
+        run: npx wrangler deploy --config email-worker/wrangler.toml
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
