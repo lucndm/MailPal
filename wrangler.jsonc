@@ -1,0 +1,23 @@
+// Cloudflare Workers config — SvelteKit frontend (Workers Builds service "mailpal")
+// Build: npm run build (vite) → output .svelte-kit/cloudflare → deploy by Workers Builds CI
+// KV shared with email-worker (same namespace: domains/aliases/settings state)
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "mailpal",
+	"compatibility_date": "2026-03-17",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": {
+		"enabled": true
+	},
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".svelte-kit/cloudflare"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "KV",
+			"id": "a5b47fc2480a46dc9f1b3aff7972c1d1"
+		}
+	]
+}
