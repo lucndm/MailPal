@@ -111,6 +111,27 @@ export async function deleteLog(kv: KVNamespace, domain: string, localPart: stri
 	await kv.delete(`log:${domain}/${localPart}`);
 }
 
+// ─── Admin two-factor (TOTP) helpers ─────────────────────────────────────────
+
+export interface AdminTotpConfig {
+	secret: string; // base32
+	enabled: boolean;
+	createdAt: number;
+}
+
+export async function getAdminTotp(kv: KVNamespace): Promise<AdminTotpConfig | null> {
+	const val = await kv.get('security:totp');
+	return val ? (JSON.parse(val) as AdminTotpConfig) : null;
+}
+
+export async function putAdminTotp(kv: KVNamespace, config: AdminTotpConfig): Promise<void> {
+	await kv.put('security:totp', JSON.stringify(config));
+}
+
+export async function deleteAdminTotp(kv: KVNamespace): Promise<void> {
+	await kv.delete('security:totp');
+}
+
 // ─── Tag helpers ──────────────────────────────────────────────────────────────
 
 export async function listTags(kv: KVNamespace): Promise<Tag[]> {

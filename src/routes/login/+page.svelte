@@ -35,20 +35,44 @@
 			</div>
 
 			<form method="POST" class="space-y-4">
-				<div>
-					<label for="password" class="block text-sm font-medium text-app-text mb-1.5">
-						Password
-					</label>
-					<input
-						id="password"
-						name="password"
-						type="password"
-						required
-						autocomplete="current-password"
-						class="w-full px-3 py-2.5 rounded-lg border border-app-border bg-app-hover text-sm text-app-text placeholder:text-app-muted focus:outline-none focus:border-app-accent/60 transition-colors"
-						placeholder="Enter your password"
-					/>
-				</div>
+				{#if form?.requires2Fa && form.twoFactorToken}
+					<p class="text-sm text-app-muted">
+						Enter the 6-digit code from your authenticator app.
+					</p>
+					<input type="hidden" name="twoFactorToken" value={form.twoFactorToken} />
+					<div>
+						<label for="totpCode" class="block text-sm font-medium text-app-text mb-1.5">
+							Verification code
+						</label>
+						<input
+							id="totpCode"
+							name="totpCode"
+							type="text"
+							inputmode="numeric"
+							pattern="[0-9]*"
+							maxlength="6"
+							required
+							autocomplete="one-time-code"
+							class="w-full px-3 py-2.5 rounded-lg border border-app-border bg-app-hover text-sm text-app-text tracking-[0.4em] text-center focus:outline-none focus:border-app-accent/60 transition-colors"
+							placeholder="000000"
+						/>
+					</div>
+				{:else}
+					<div>
+						<label for="password" class="block text-sm font-medium text-app-text mb-1.5">
+							Password
+						</label>
+						<input
+							id="password"
+							name="password"
+							type="password"
+							required
+							autocomplete="current-password"
+							class="w-full px-3 py-2.5 rounded-lg border border-app-border bg-app-hover text-sm text-app-text placeholder:text-app-muted focus:outline-none focus:border-app-accent/60 transition-colors"
+							placeholder="Enter your password"
+						/>
+					</div>
+				{/if}
 
 				{#if form?.error}
 					<p class="text-sm text-red-400 bg-red-400/10 rounded-lg px-3 py-2">{form.error}</p>
@@ -58,7 +82,7 @@
 					type="submit"
 					class="w-full py-2.5 px-4 bg-app-accent hover:brightness-110 text-app-bg text-sm font-semibold rounded-lg transition-all"
 				>
-					Sign in
+					{form?.requires2Fa && form.twoFactorToken ? 'Verify' : 'Sign in'}
 				</button>
 			</form>
 		</div>
