@@ -9,6 +9,7 @@ declare global {
 				SL_API_KEY?: string;
 				CF_API_TOKEN?: string;
 				CF_ACCOUNT_ID?: string;
+				CF_API_BASE?: string;
 				DEMO_MODE?: string;
 			};
 			context: {

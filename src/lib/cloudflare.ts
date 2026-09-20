@@ -18,6 +18,47 @@ export interface CloudflareRequestError extends Error {
 	accountId?: string | null;
 }
 
+export interface CloudflareZoneInfo {
+	id: string;
+	name: string;
+	status: string;
+}
+
+/** Lists all active zones (domains) under the token's account (paginated). */
+export async function listAllCfZones(
+	token: string,
+	baseUrl = 'https://api.cloudflare.com/client/v4'
+): Promise<CloudflareZoneInfo[]> {
+	let page = 1;
+	const perPage = 50;
+	const allZones: CloudflareZoneInfo[] = [];
+	let hasMore = true;
+
+	while (hasMore) {
+		const url = `${baseUrl}/zones?status=active&per_page=${perPage}&page=${page}`;
+		const res = await fetch(url, {
+			headers: { Authorization: `Bearer ${token.trim()}`, 'Content-Type': 'application/json' }
+		});
+		const body = (await res.json().catch(() => ({}))) as {
+			success?: boolean;
+			result?: CloudflareZoneInfo[];
+			result_info?: { page?: number; total_pages?: number };
+			errors?: Array<{ code?: number; message?: string }>;
+		};
+
+		if (!res.ok) throw parseCfError(res, body, null);
+		if (!body.success) {
+			throw authError('Failed to list zones from the Cloudflare API', res.status, null);
+		}
+
+		allZones.push(...(body.result ?? []));
+		if (body.result_info && page < (body.result_info.total_pages ?? page)) page++;
+		else hasMore = false;
+	}
+
+	return allZones;
+}
+
 function authError(message: string, status: number, accountId: string | null): CloudflareRequestError {
 	const error = new Error(message) as CloudflareRequestError;
 	error.isAuthError = status === 401 || status === 403;

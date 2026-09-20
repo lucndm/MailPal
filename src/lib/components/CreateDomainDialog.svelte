@@ -25,6 +25,8 @@
 	let saving = $state(false);
 	let error = $state('');
 	let createdDomain = $state<DomainConfig | null>(null);
+	let syncing = $state(false);
+	let syncMessage = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
 
 	// Pre-select the first destination if available
 	$effect(() => {
@@ -69,6 +71,38 @@
 	function handleClose() {
 		reset();
 		onClose();
+	}
+
+	async function syncFromCloudflare() {
+		syncing = true;
+		syncMessage = null;
+		error = '';
+		try {
+			const res = await fetch('/api/domains/sync', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ defaultTargetEmail: targetEmail, enable: true })
+			});
+			const body = await res.json();
+			if (!res.ok) {
+				syncMessage = { kind: 'error', text: body.error ?? 'Sync failed' };
+				return;
+			}
+			for (const imported of body.domains as DomainConfig[]) {
+				onCreated(imported);
+			}
+			syncMessage = {
+				kind: 'success',
+				text:
+					body.added > 0
+						? `Imported ${body.added} new domain${body.added === 1 ? '' : 's'} (${body.totalZones} zone${body.totalZones === 1 ? '' : 's'} in your Cloudflare account, ${body.skipped} already registered).`
+						: `Nothing to import — all ${body.totalZones} Cloudflare zone${body.totalZones === 1 ? '' : 's'} are already registered.`
+			};
+		} catch {
+			syncMessage = { kind: 'error', text: 'Network error' };
+		} finally {
+			syncing = false;
+		}
 	}
 </script>
 
@@ -203,6 +237,38 @@
 				>
 					{saving ? 'Creating…' : 'Create domain'}
 				</button>
+			</div>
+
+			<div class="border-t border-app-border pt-4 space-y-2">
+				<div class="flex items-center justify-between gap-2">
+					<div>
+						<p class="text-sm font-medium text-app-text">Import from Cloudflare</p>
+						<p class="text-xs text-app-muted mt-0.5">
+							Register every active zone in your Cloudflare account. Requires
+							<span class="font-mono">CF_API_TOKEN</span> to be configured. The default target
+							above is applied to imported domains.
+						</p>
+					</div>
+					<button
+						type="button"
+						onclick={syncFromCloudflare}
+						disabled={syncing || !targetEmail}
+						aria-busy={syncing}
+						class="flex-none px-3 py-1.5 text-xs font-semibold border border-app-border hover:border-app-accent/50 text-app-text rounded-lg transition-colors disabled:opacity-40"
+					>
+						{syncing ? 'Syncing…' : 'Sync now'}
+					</button>
+				</div>
+				{#if syncMessage}
+					<p
+						role="alert"
+						class="text-xs rounded-lg px-3 py-2 {syncMessage.kind === 'error'
+							? 'text-red-400 bg-red-400/10'
+							: 'text-green-400 bg-green-400/10'}"
+					>
+						{syncMessage.text}
+					</p>
+				{/if}
 			</div>
 		</form>
 	{/if}

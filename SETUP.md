@@ -255,6 +255,8 @@ After onboarding, you can add more domains via the sidebar **+** button.
 |---|---|---|---|
 | `AUTH_PASSWORD` | Pages secret (`wrangler pages secret put`) | No | Enables dashboard password login. Omit to skip password auth. |
 | `SL_API_KEY` | Pages secret (`wrangler pages secret put`) | No | Enables the SimpleLogin-compatible API. Must be a long random string. |
+| `CF_API_TOKEN` | Pages secret (`wrangler pages secret put`) | No | Enables Cloudflare-powered features: destination verification probe and domain sync. Needs `Account -> Email Routing Addresses: Read/Edit` (+ `Zone: Read` for domain sync). |
+| `CF_ACCOUNT_ID` | Pages variable | No | Explicit Cloudflare Account ID; auto-resolved from the token when omitted. |
 | `KV` | `wrangler.toml` binding | Yes | KV namespace shared between the dashboard and the email worker. |
 | `DEMO_MODE` | Pages variable | No | Set to `1` to enable read-only demo mode with seed data (no real KV writes). |
 
