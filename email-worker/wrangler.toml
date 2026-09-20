@@ -7,3 +7,5 @@ compatibility_flags = ["nodejs_compat"]
 binding = "KV"
 # namespace "mailpal-kv" — shared with frontend (wrangler.jsonc ở root)
 id = "a5b47fc2480a46dc9f1b3aff7972c1d1"
+[observability]
+enabled = true
