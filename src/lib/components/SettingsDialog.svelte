@@ -41,6 +41,60 @@
 	let showDestinationForm = $state(false);
 	let deletingTag = $state<string | null>(null);
 
+	// Cloudflare destination verification status (probed when the dialog opens)
+	interface CfStatus {
+		id?: string;
+		verified: boolean;
+		status: 'verified' | 'pending' | 'not_in_cf';
+		created?: string;
+	}
+	let cfStatuses = $state<Record<string, CfStatus>>({});
+	let cfTokenConfigured = $state<boolean | null>(null);
+	let cfChecking = $state(false);
+	let cfBusyEmail = $state<string | null>(null);
+
+	$effect(() => {
+		if (open) void loadCfStatuses();
+	});
+
+	async function loadCfStatuses() {
+		cfChecking = true;
+		try {
+			const res = await fetch('/api/destinations/probe');
+			const body = await res.json();
+			if (res.ok) {
+				cfTokenConfigured = body.tokenConfigured === true;
+				cfStatuses = body.statuses ?? {};
+			} else {
+				cfTokenConfigured = false;
+			}
+		} catch {
+			cfTokenConfigured = false;
+		} finally {
+			cfChecking = false;
+		}
+	}
+
+	async function addToCloudflare(email: string) {
+		cfBusyEmail = email;
+		try {
+			const res = await fetch('/api/destinations/probe', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ email, action: 'add_to_cf' })
+			});
+			const body = await res.json();
+			if (res.ok && body.success) {
+				cfStatuses = {
+					...cfStatuses,
+					[email]: { id: body.id, verified: body.verified, status: body.status, created: body.created }
+				};
+			}
+		} finally {
+			cfBusyEmail = null;
+		}
+	}
+
 	async function handleAdd(e: Event) {
 		e.preventDefault();
 		adding = true;
@@ -171,6 +225,18 @@
 							<!-- Dot indicator -->
 							<!-- <span class="w-1.5 h-1.5 rounded-full bg-app-accent/70 shrink-0" aria-hidden="true"></span> -->
 							<span class="flex-1 text-sm text-app-text truncate">{dest.email}</span>
+							{#if cfTokenConfigured === true && cfStatuses[dest.email]}
+								{@const s = cfStatuses[dest.email]}
+								<span
+									class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 {s.status === 'verified'
+										? 'bg-green-500/15 text-green-400'
+										: s.status === 'pending'
+											? 'bg-amber-500/15 text-amber-400'
+											: 'bg-red-500/15 text-red-400'}"
+								>
+									{s.status === 'verified' ? 'Verified' : s.status === 'pending' ? 'Pending' : 'Not in CF'}
+								</span>
+							{/if}
 							<button
 								onclick={() => handleDelete(dest.email)}
 								disabled={deletingEmail === dest.email}
@@ -182,6 +248,20 @@
 								</svg>
 							</button>
 						</div>
+
+						<!-- Cloudflare verification action for unregistered addresses -->
+						{#if cfTokenConfigured === true && cfStatuses[dest.email]?.status === 'not_in_cf'}
+							<div class="ml-3 flex items-center gap-2">
+								<button
+									type="button"
+									onclick={() => addToCloudflare(dest.email)}
+									disabled={cfBusyEmail === dest.email}
+									class="text-xs text-app-accent hover:underline underline-offset-2 disabled:opacity-40"
+								>
+									{cfBusyEmail === dest.email ? 'Adding…' : 'Register with Cloudflare & send verification email'}
+								</button>
+							</div>
+						{/if}
 
 						<!-- Cloudflare setup guide for newly added address -->
 						{#if justAdded === dest.email}

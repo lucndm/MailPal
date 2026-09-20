@@ -7,6 +7,8 @@ declare global {
 				KV: KVNamespace;
 				AUTH_PASSWORD?: string;
 				SL_API_KEY?: string;
+				CF_API_TOKEN?: string;
+				CF_ACCOUNT_ID?: string;
 				DEMO_MODE?: string;
 			};
 			context: {
