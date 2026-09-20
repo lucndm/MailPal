@@ -16,7 +16,7 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "deploy:frontend": "npm run build && wrangler pages deploy",
-    "deploy:worker": "wrangler deploy --cwd email-worker",
+    "deploy:worker": "wrangler deploy --config email-worker/wrangler.toml",
     "deploy": "npm run deploy:frontend && npm run deploy:worker"
   },
   "devDependencies": {
