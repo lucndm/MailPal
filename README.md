@@ -63,6 +63,9 @@ Every alias tracks forwarded and blocked counts plus a per-alias activity log, s
 - **Built for real workflows** – 
 Add notes, assign color tags, and use full-text search to find any alias in seconds. Bulk-enable, bulk-disable, or bulk-delete when you need to act fast. Manage multiple domains from a single dashboard.
 
+- **SimpleLogin-compatible API** – 
+Set an `SL_API_KEY` and official SimpleLogin clients — including Bitwarden's "Forwarded email alias" generator — can create and manage aliases on your domains directly. See [SETUP.md](SETUP.md).
+
 ## How it works
 
 > Note: this project has been built with the use of AI tools like Claude Code and GitHub Copilot/Agents. 

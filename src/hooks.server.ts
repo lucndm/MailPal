@@ -1,5 +1,6 @@
 import { redirect, type Handle } from '@sveltejs/kit';
 import { verifySession, COOKIE_NAME } from '$lib/auth.js';
+import { isSimpleLoginApiRoute, isSimpleLoginLoginRoute, verifyApiKey } from '$lib/simplelogin.js';
 import { DemoKV, type DemoDelta } from '$lib/demo-kv.js';
 
 const DEMO_STATE_COOKIE = 'demo_state';
@@ -13,6 +14,52 @@ const SECURITY_HEADERS: Record<string, string> = {
 
 export const handle: Handle = async ({ event, resolve }) => {
 	const platform = event.platform;
+
+	// ── SimpleLogin-compatible API ──────────────────────────────────────────
+	// Authenticated with the `Authentication: <api_key>` header instead of a
+	// session cookie, so external clients (SimpleLogin apps, Bitwarden
+	// forwarders, ...) can talk to MailPal. Only available on real
+	// deployments with a KV namespace and the SL_API_KEY env var set.
+	// CORS is open (`*`) on purpose: the API is key-authenticated and never
+	// cookie-authenticated, so no ambient credentials can be exercised.
+	if (isSimpleLoginApiRoute(event.url.pathname)) {
+		const CORS_HEADERS: Record<string, string> = {
+			'Access-Control-Allow-Origin': '*',
+			'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+			'Access-Control-Allow-Headers': 'Authentication, Content-Type',
+			'Access-Control-Max-Age': '86400'
+		};
+
+		if (event.request.method === 'OPTIONS') {
+			return new Response(null, { status: 204, headers: CORS_HEADERS });
+		}
+
+		const kv = platform?.env?.KV;
+		const apiKey = platform?.env?.SL_API_KEY;
+		if (!kv || !apiKey) {
+			return new Response(JSON.stringify({ error: 'API disabled' }), {
+				status: 401,
+				headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+			});
+		}
+		event.locals.kv = kv;
+		event.locals.authMode = 'password';
+		if (!isSimpleLoginLoginRoute(event.url.pathname)) {
+			if (!verifyApiKey(event.request.headers.get('Authentication'), apiKey)) {
+				return new Response(JSON.stringify({ error: 'wrong api key' }), {
+					status: 401,
+					headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+				});
+			}
+		}
+		event.locals.authenticated = true;
+		const response = await resolve(event);
+		for (const [key, value] of Object.entries({ ...SECURITY_HEADERS, ...CORS_HEADERS })) {
+			response.headers.set(key, value);
+		}
+		return response;
+	}
+
 	const demoMode = platform?.env?.DEMO_MODE;
  	const isDemoModeEnabled = demoMode === '1' || demoMode === 'true';
 

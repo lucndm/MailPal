@@ -6,6 +6,7 @@ declare global {
 			env: {
 				KV: KVNamespace;
 				AUTH_PASSWORD?: string;
+				SL_API_KEY?: string;
 				DEMO_MODE?: string;
 			};
 			context: {

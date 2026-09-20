@@ -68,6 +68,13 @@ export async function listAliases(kv: KVNamespace, domain: string): Promise<Alia
 	return configs.filter((c): c is AliasConfig => c !== null);
 }
 
+/** Lists every alias across all configured domains. */
+export async function listAllAliases(kv: KVNamespace): Promise<AliasConfig[]> {
+	const domains = await listDomains(kv);
+	const all = await Promise.all(domains.map((d) => listAliases(kv, d.domain)));
+	return all.flat();
+}
+
 // ─── Destination address helpers ──────────────────────────────────────────────
 
 export async function listDestinations(kv: KVNamespace): Promise<DestinationAddress[]> {

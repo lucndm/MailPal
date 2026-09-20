@@ -254,8 +254,53 @@ After onboarding, you can add more domains via the sidebar **+** button.
 | Variable | Where | Required | Description |
 |---|---|---|---|
 | `AUTH_PASSWORD` | Pages secret (`wrangler pages secret put`) | No | Enables dashboard password login. Omit to skip password auth. |
+| `SL_API_KEY` | Pages secret (`wrangler pages secret put`) | No | Enables the SimpleLogin-compatible API. Must be a long random string. |
 | `KV` | `wrangler.toml` binding | Yes | KV namespace shared between the dashboard and the email worker. |
 | `DEMO_MODE` | Pages variable | No | Set to `1` to enable read-only demo mode with seed data (no real KV writes). |
+
+---
+
+## SimpleLogin-compatible API (optional)
+
+MailPal exposes a subset of the [SimpleLogin API](https://github.com/simple-login/app/blob/master/docs/api.md), so any
+client written for SimpleLogin — the official browser extension and mobile apps, or the **Bitwarden "Forwarded email
+alias" generator** — can create and manage aliases on your own domains.
+
+### Enable it
+
+```bash
+wrangler pages secret put SL_API_KEY
+```
+
+Enter a long random string (e.g. `openssl rand -hex 32`). Until `SL_API_KEY` is set, all
+SimpleLogin endpoints return `401 {"error": "API disabled"}`.
+
+If `AUTH_PASSWORD` is also set, clients can additionally log in with the dashboard password via
+`POST /api/auth/login` and receive the API key, instead of pasting it directly.
+
+### Supported endpoints
+
+| Endpoint | Description |
+|---|---|
+| `POST /api/auth/login` | Exchange `AUTH_PASSWORD` for the API key |
+| `GET /api/user_info` | Account info (always reports plan `Premium` — self-hosted has no quota) |
+| `GET /api/v5/alias/options` | Alias options: available domain suffixes (HMAC-signed), prefix suggestion from `hostname` |
+| `POST /api/v3/alias/custom/new` | Create a custom alias (`alias_prefix` + `signed_suffix`) |
+| `POST /api/alias/random/new` | Create a random alias (`mode=word` slug or `mode=uuid`) |
+| `GET /api/v2/aliases` | Paginated alias list |
+| `GET/PATCH/DELETE /api/aliases/:id` | Alias info, note update, delete |
+| `POST /api/aliases/:id/toggle` | Enable/disable an alias |
+
+All endpoints authenticate with an `Authentication: <api_key>` header (except `/api/auth/login`).
+
+Not implemented (SimpleLogin clients degrade gracefully): contacts/reply, mailboxes, custom-domain management,
+PGP, notifications.
+
+### Use with Bitwarden
+
+1. Bitwarden → **Generator** → **Username** → **Forwarded email alias** → provider **SimpleLogin**
+2. Paste your `SL_API_KEY` value as the **API Key**
+3. **Generate** creates a new alias on one of your enabled MailPal domains and stores it as the login's username
 
 ---
 
