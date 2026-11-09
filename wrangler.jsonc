@@ -1,11 +1,16 @@
 // Cloudflare Workers config — SvelteKit frontend (Workers Builds service "mailpal")
-// Build: npm run build (vite) → output .svelte-kit/cloudflare → deploy by Workers Builds CI
+// Build: npm run check && npm run build (vite) → output .svelte-kit/cloudflare →
+// deployed by Workers Builds from main only
 // KV shared with email-worker (same namespace: domains/aliases/settings state)
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "mailpal",
 	"compatibility_date": "2026-03-17",
 	"compatibility_flags": ["nodejs_compat"],
+	// Workers Builds deploys this worker from main; a version uploaded from any
+	// other ref would run against the production KV and secrets, so it gets no
+	// public preview URL. Every deploy applies this setting.
+	"preview_urls": false,
 	"observability": {
 		"enabled": true
 	},
